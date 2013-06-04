@@ -1,0 +1,23 @@
+{
+  "name": "igor",
+  "description": "scripts for bringing your livedb to life",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "bin": {
+    "itsalive": "./bin/itsalive"
+  },
+  "dependencies": {
+    "optimist": "~0.5.2",
+    "redis": "~0.8.3",
+    "mongoskin": "*",
+    "ottypes": "*",
+    "async": "*",
+    "coffeescript": "*"
+  },
+  "engines": {
+    "node": "0.10.x"
+  }
+}
