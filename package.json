@@ -15,7 +15,7 @@
     "mongoskin": "*",
     "ottypes": "*",
     "async": "*",
-    "coffeescript": "*"
+    "coffee-script": "*"
   },
   "engines": {
     "node": "0.10.x"
