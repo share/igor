@@ -12,7 +12,7 @@ mongo_db   = argv.db or process.env.MONGO_DB or 'test'
 db         = mongo.db(mongo_host + ':' + mongo_port + '/' + mongo_db + '?auto_reconnect')
 
 rc = redis.createClient()
-rc.select argv.r or 1
+rc.select argv.r ? 1
 
 #don't need to make these collections live
 blacklist = ['system.indexes']
