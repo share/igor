@@ -21,6 +21,9 @@ if process.env.REDIS_AUTH
 
 rc.select argv.r ? 1
 
+# Allow user to process operation in batches of specified number, in case their data is too large for .toArray()
+batch = +argv.b
+
 #don't need to make these collections live
 blacklist = ['system.indexes']
 
@@ -31,38 +34,45 @@ rc.on 'error', (err) ->
   console.log("redis error", err)
 
 processCollection = (name, cb) ->
-  #go through all of the docs in the collection and create an op log for it
-  collection = db.collection(name)
-  collection.find().toArray (err, docs) ->
-    console.log name, "DOCS", docs.length
-    async.map docs, (doc, redisCb) ->
-      op =
-        create:
-          type: jsonType
-          data: doc
-      #key format: "collectionName.docId ops"
-      key = name + '.' + doc._id + ' ops'
-      rc.del key, (err) ->
-        return cb err if err
-        rc.rpush key, JSON.stringify(op), (err) ->
+  processBatch = (batchNum) ->
+    #go through all of the docs in the collection and create an op log for it
+    collection = db.collection(name)
+    cursor = collection.find()
+    if batch
+      cursor.limit batch
+      cursor.skip batchNum * batch
+    cursor.toArray (err, docs) ->
+      #console.log name, "DOCS", docs.length
+      async.map docs, (doc, redisCb) ->
+        op =
+          create:
+            type: jsonType
+            data: doc
+        #key format: "collectionName.docId ops"
+        key = name + '.' + doc._id + ' ops'
+        rc.del key, (err) ->
           return cb err if err
-          doc.id = doc._id
-          doc._v = 1
-          doc._type  = jsonType
-          collection.update {_id: doc._id}, doc, redisCb
-    , (err, added) ->
-      return cb err
+          rc.rpush key, JSON.stringify(op), (err) ->
+            return cb err if err
+            doc.id = doc._id
+            doc._v = 1
+            doc._type  = jsonType
+            collection.update {_id: doc._id}, doc, redisCb
+      , (err, added) ->
+        return cb(err) unless batch # they didn't pass in `batch`, so we process everything
+        # the most recent batch size is less than `batch` option, meaning we've reached the end
+        return cb(err) if added.length < batch
+        processBatch(++batchNum) # keep iterating in batches
+  processBatch(0)
 
 db.collections (err, collections) ->
   names = []
   collections.forEach (c) ->
     if blacklist.indexOf(c.collectionName) < 0
       names.push c.collectionName
-    
+
   console.log "collections", names
   async.map names, processCollection, (err, results) ->
     console.log 'all done'
     db.close()
     process.exit()
-
-
