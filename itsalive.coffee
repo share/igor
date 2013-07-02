@@ -54,10 +54,7 @@ processCollection = (name, cb) ->
           return cb err if err
           rc.rpush key, JSON.stringify(op), (err) ->
             return cb err if err
-            doc.id = doc._id
-            doc._v = 1
-            doc._type  = jsonType
-            collection.update {_id: doc._id}, doc, redisCb
+            collection.update {_id: doc._id}, {$set: id: doc._id, _v: 1, _type: jsonType}, redisCb
       , (err, added) ->
         # they didn't pass in `batch`, so we process everything (or there was an error)
         return cb(err) if (err or !batch)
