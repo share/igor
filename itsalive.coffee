@@ -42,7 +42,7 @@ processCollection = (name, cb) ->
       cursor.limit batch
       cursor.skip batchNum * batch
     cursor.toArray (err, docs) ->
-      #console.log name, "DOCS", docs.length
+      console.log name, "DOCS", docs.length
       async.map docs, (doc, redisCb) ->
         op =
           create:
@@ -59,10 +59,12 @@ processCollection = (name, cb) ->
             doc._type  = jsonType
             collection.update {_id: doc._id}, doc, redisCb
       , (err, added) ->
-        return cb(err) unless batch # they didn't pass in `batch`, so we process everything
+        # they didn't pass in `batch`, so we process everything (or there was an error)
+        return cb(err) if (err or !batch)
         # the most recent batch size is less than `batch` option, meaning we've reached the end
         return cb(err) if added.length < batch
-        processBatch(++batchNum) # keep iterating in batches
+        # else keep iterating
+        processBatch(++batchNum)
   processBatch(0)
 
 db.collections (err, collections) ->
@@ -73,6 +75,7 @@ db.collections (err, collections) ->
 
   console.log "collections", names
   async.map names, processCollection, (err, results) ->
+    console.error(err) if err
     console.log 'all done'
     db.close()
     process.exit()
