@@ -26,7 +26,7 @@ rc.select argv.r ? 1
 batch = argv.b
 
 #don't need to make these collections live
-blacklist = ['system.indexes']
+blacklist = ['system.indexes', 'system.users', 'configs']
 
 ottypes = require('ottypes')
 jsonType = ottypes.json0.uri
@@ -34,41 +34,39 @@ jsonType = ottypes.json0.uri
 rc.on 'error', (err) ->
   console.error("redis error", err)
 
-processCollection = (name, cb) ->
-  #go through all of the docs in the collection and create an op log for it
-  collection = db.collection(name)
-  options = if batch then {batchSize: +batch} else {}
-  collection.find({}, options).toArray (err, docs) ->
-    console.log name, "DOCS", docs.length
-    async.map docs, (doc, redisCb) ->
-      runningOps = 2
-      done = (err) ->
-        console.error(err) if err
-        redisCb(err) if (--runningOps is 0)
-
-      key = "#{name}.#{doc._id} ops" # key format: "collectionName.docId ops"
-      op = JSON.stringify create: {type: jsonType, data: doc}
-      rc.del key, (err) ->
-        console.error(err) if err
-        rc.rpush key, op, done
-
-      collection.update {_id: doc._id}, {$set: id: doc._id, _v: 1, _type: jsonType}, done
-
-    , (err, added) ->
-      if docs.length isnt added.length
-        console.log("#{docs.length} found, #{added.length} processed")
-      console.error(err) if err
-      return cb err
-
 db.collections (err, collections) ->
   names = []
   collections.forEach (c) ->
-    if blacklist.indexOf(c.collectionName) < 0
-      names.push c.collectionName
+    names.push c.collectionName unless ~blacklist.indexOf(c.collectionName)
 
-  console.log "collections", names
-  async.map names, processCollection, (err, results) ->
+  counter = collections: names.length, items: 0, total: 0
+  itemDone = (err) ->
     console.error(err) if err
-    console.log "All done. Processed #{results.length} collections"
-    db.close()
-    process.exit()
+    if (counter.collections is 0) and (--counter.items is 0)
+      console.log "All done. Processed #{counter.total} collections"
+      db.close()
+      process.exit()
+
+  # Each must be used for large datasets, toArray won't fit in memory: http://mongodb.github.io/node-mongodb-native/api-generated/cursor.html#each
+  names.forEach (name) ->
+    #go through all of the docs in the collection and create an op log for it
+    collection = db.collection(name)
+    collection.count (err, count) ->
+      console.error err if err
+      counter.items += +count
+      counter.total += +count
+      counter.collections--
+      console.log name, "DOCS", count
+
+      cursor = collection.find()
+      cursor.batchSize(+batch) if batch
+      cursor.each (err, doc) ->
+        return itemDone("null doc... ???") unless doc
+
+        key = "#{name}.#{doc._id} ops" # key format: "collectionName.docId ops"
+        op = JSON.stringify create: {type: jsonType, data: doc}
+        rc.del key, (err) ->
+          console.error err if err
+          rc.rpush key, op, (err) ->
+            console.error err if err
+            collection.update {_id: doc._id}, {$set: id: doc._id, _v: 1, _type: jsonType}, itemDone
