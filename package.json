@@ -15,7 +15,9 @@
     "mongoskin": "*",
     "ottypes": "*",
     "async": "*",
-    "coffee-script": "*"
+    "coffee-script": "*",
+    "livedb":"*",
+    "livedb-mongo":"*"
   },
   "engines": {
     "node": "0.10.x"
