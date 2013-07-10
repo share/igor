@@ -56,4 +56,6 @@ db.collections (err, collections) ->
               cb(null, counter) if counter == count
 
   , (err, results) ->
-    console.log "ALL DONE", results
+    console.log "ALL DONE"
+    db.close()
+    process.exit()
