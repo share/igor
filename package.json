@@ -6,9 +6,6 @@
     "type": "git",
     "url": ""
   },
-  "bin": {
-    "itsalive": "./bin/itsalive"
-  },
   "dependencies": {
     "optimist": "~0.5.2",
     "redis": "~0.8.3",
