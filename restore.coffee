@@ -84,12 +84,9 @@ module.exports.operations = (collection, operations, options, callback) ->
   redis.flushdb (err) ->
     async.map operations, (doc, docCb) ->
       key = "#{collection}.#{doc.name} ops"
-      redis.del key, (err) ->
-        console.log "ERRR", err if err
-        return docCb(err) if err
-        redis.lpush key, doc.ops, (err) ->
-          console.log "ERRR :(", err if err
-          docCb(err)
+      async.map JSON.parse(doc.ops), (op, opCb) ->
+        redis.rpush key, op, opCb
+      , docCb
     , callback
 
 
