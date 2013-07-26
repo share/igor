@@ -85,7 +85,7 @@ module.exports.operations = (collection, operations, options, callback) ->
     async.map operations, (doc, docCb) ->
       key = "#{collection}.#{doc.name} ops"
       async.map JSON.parse(doc.ops), (op, opCb) ->
-        redis.rpush key, op, opCb
+        redis.rpush key, JSON.stringify(op), opCb
       , docCb
     , callback
 
