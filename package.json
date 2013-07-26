@@ -14,7 +14,8 @@
     "async": "*",
     "coffee-script": "*",
     "livedb":"*",
-    "livedb-mongo":"*"
+    "livedb-mongo":"*",
+    "arraydiff": "*"
   },
   "engines": {
     "node": "0.10.x"
