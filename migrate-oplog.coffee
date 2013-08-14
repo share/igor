@@ -1,7 +1,8 @@
 redis = require 'redis'
 async = require 'async'
 
-migrate = exports.migrate = (oplog, client = redis.createClient(), callback) ->
+migrate = module.exports = (oplog, client = redis.createClient(), callback) ->
+  [client, callback] = [redis.createClient(), client] if typeof client is 'function'
   client.keys '* ops', (err, results) ->
     return callback? err if err
 
@@ -28,7 +29,6 @@ migrate = exports.migrate = (oplog, client = redis.createClient(), callback) ->
 if require.main == module
   oplog = require('livedb-mongo') 'localhost:27017/test?auto_reconnect', safe:true
   client = redis.createClient()
-  client.select 1
 
   migrate oplog, client, (err) ->
     console.log 'Done!', err
