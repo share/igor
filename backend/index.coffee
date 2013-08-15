@@ -1,9 +1,13 @@
 livedb = require 'livedb'
 {LiveDbMongo} = require 'livedb-mongo'
-#LiveDbSolr = require 'livedb-solr'
-#solr = require './solr'
-mongo = require './mongo'
-redis = require './redis'
-redisObserver = require './redisObserver'
+createMongo = require './mongo'
+createRedis = require './redis'
 
-module.exports = livedb.client new LiveDbMongo(mongo), redis, redisObserver
+module.exports = exports = (conf = {}) ->
+  livedb.client
+    db: new LiveDbMongo createMongo(conf.mongo?)
+    redis: createRedis(conf.redis?)
+    redisObserver: createRedis(conf.redis?)
+
+exports.createMongo = createMongo
+exports.createRedis = createRedis
