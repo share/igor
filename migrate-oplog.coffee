@@ -22,16 +22,28 @@ migrate = module.exports = (oplog, client = redis.createClient(), callback) ->
           oplog.writeOp cName, docName, op, (err) ->
             console.warn "Error writing op #{cName} #{docName}: #{err}" if err
             callback()
-        , callback
+        , (err) ->
+          return callback err if err
+
+          # Delete the ops from redis.
+          if migrate.del
+            client.del k, callback
+          else
+            callback()
 
     async.each results, iterator, callback
+
+# Should the script also delete the original ops in redis when it copies them in?
+migrate.del = true
 
 if require.main == module
   oplog = require('livedb-mongo') 'localhost:27017/test?auto_reconnect', safe:true
   client = redis.createClient()
+  client.select 1
 
   migrate oplog, client, (err) ->
-    console.log 'Done!', err
+    return console.error err if err
+    console.log 'Done!'
     client.quit()
     oplog.close()
 
