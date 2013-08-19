@@ -34,7 +34,9 @@ migrate = module.exports = (oplog, client = redis.createClient(), callback) ->
     async.each results, iterator, callback
 
 # Should the script also delete the original ops in redis when it copies them in?
-migrate.del = true
+#
+# This defaults to not delete - livedb can deal with junk in the oplog.
+migrate.del = false
 
 if require.main == module
   oplog = require('livedb-mongo') 'localhost:27017/test?auto_reconnect', safe:true
