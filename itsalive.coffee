@@ -1,6 +1,10 @@
 # Turn a mongo db into a live-db
 # you should probably redis-cli flushdb; before running this script
 async = require 'async'
+argv = require('optimist').argv
+backend = require './backend'
+livedb = require 'livedb'
+LiveDbMongo = require 'livedb-mongo'
 
 consoleError = (err) ->
   return console.error err if err
@@ -48,21 +52,18 @@ castToSnapshot = (doc) ->
 
 
 exports = module.exports
-exports.itsalive = (options = {}, callback) ->
+exports.itsalive = (callback) ->
   #don't need to make these collections live
   blacklist = ['system.indexes', 'system.users', 'configs', 'sessions']
-  batch = options.batch
+  batch = argv.b
 
   # Setup the db
-  backend = require './backend'
-  livedb = require 'livedb'
-  {LiveDbMongo} = require 'livedb-mongo'
-  mongo = backend.createMongo options.mongo
+  mongo = backend.createMongo()
   db = new LiveDbMongo mongo
   ldbc = livedb.client
     db: db
-    redis: backend.createRedis(options.redis)
-    redisObserver: backend.createRedis(options.redis)
+    redis: backend.createRedis() 
+    redisObserver: backend.createRedis()
 
   ottypes = require('ottypes')
   jsonType = ottypes.json0.uri
@@ -143,24 +144,8 @@ exports.itsalive = (options = {}, callback) ->
 
 #called directly from command line (not required as a module)
 if require.main == module
-  # Allow user to process operation in batches of specified number, in case their data is too large for .toArray()
-  argv = require('optimist').argv
-  batch = argv.b
-  options =
-    batch: batch
-    mongo:
-      host: argv.host
-      port: argv.port
-      db: argv.db
-      user: argv.user
-      pass: argv.pass
-      url: argv.url
-    redis:
-      host: argv.rhost
-      port: argv.rport
-      db: argv.rdb
 
-  exports.itsalive options, (err, results) ->
+  exports.itsalive (err, results) ->
     if err
       console.log "ERROR! NOT FINISHED!"
       console.log err

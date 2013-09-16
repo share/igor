@@ -1,13 +1,20 @@
 mongoskin = require 'mongoskin'
+optimist = require 'optimist'
 
 consoleError = (err) ->
   return console.error err if err
 
-module.exports = (conf) ->
+module.exports = ->
 
-  conf.host ?= process.env.MONGO_HOST or 'localhost'
-  conf.port ?= process.env.MONGO_PORT or 27017
-  conf.db ?= process.env.MONGO_DB or 'test'
+  argv = optimist.argv
+
+  conf =
+    host:argv.host or process.env.MONGO_HOST or 'localhost'
+    port: argv.port or process.env.MONGO_PORT or 27017
+    db: argv.db or process.env.MONGO_DB or 'test'
+    user: argv.user
+    pass: argv.pass
+    url: argv.url
 
   if conf.url
     url = conf.url
