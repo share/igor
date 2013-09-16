@@ -1,8 +1,12 @@
-module.exports = (conf = {}) ->
+module.exports = (conf) ->
 
-  port = conf.port or 6379
-  host = conf.host or '127.0.0.1'
-  redis = require('redis').createClient port, host
-  redis.select(conf.db || 1)
+  conf.host ?= process.env.REDIS_HOST or 'localhost'
+  conf.port ?= process.env.REDIS_PORT or 6379
+  conf.db ?= process.env.REDIS_DB or 1
+
+  console.log "Redis: #{conf.host}:#{conf.port} #{conf.db}"
+
+  redis = require('redis').createClient conf.port, conf.host
+  redis.select conf.db
 
   return redis

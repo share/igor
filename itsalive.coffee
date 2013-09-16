@@ -149,13 +149,16 @@ if require.main == module
   options =
     batch: batch
     mongo:
-      host: 'localhost'
-      port: 27017
-      db: 'test'
+      host: argv.host
+      port: argv.port
+      db: argv.db
+      user: argv.user
+      pass: argv.pass
+      url: argv.url
     redis:
-      host: 'localhost'
-      port: 6379
-      db: 1
+      host: argv.rhost
+      port: argv.rport
+      db: argv.rdb
 
   exports.itsalive options, (err, results) ->
     if err
