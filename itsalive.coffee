@@ -68,6 +68,7 @@ exports.itsalive = (options = {}, callback) ->
   jsonType = ottypes.json0.uri
 
   mongo.collections (err, cols) ->
+    return callback err if err
     collections = []
     cols.forEach (c) ->
       console.log "collection", c.collectionName
@@ -157,5 +158,9 @@ if require.main == module
       db: 1
 
   exports.itsalive options, (err, results) ->
-    console.log "ALL DONE"
+    if err
+      console.log "ERROR! NOT FINISHED!"
+      console.log err
+    else
+      console.log "ALL DONE"
     process.exit()
