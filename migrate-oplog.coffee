@@ -1,8 +1,15 @@
 redis = require 'redis'
 async = require 'async'
+backend = require './backend'
+LiveDbMongo = require 'livedb-mongo'
+argv = require('optimist').argv
 
-migrate = module.exports = (oplog, client = redis.createClient(), callback) ->
-  [client, callback] = [redis.createClient(), client] if typeof client is 'function'
+
+exports = module.exports
+exports.migrate = (options = {}, callback) ->
+  oplog = new LiveDbMongo backend.createMongo options
+  client = backend.createRedis options
+
   client.keys '* ops', (err, results) ->
     return callback? err if err
 
@@ -36,17 +43,15 @@ migrate = module.exports = (oplog, client = redis.createClient(), callback) ->
 # Should the script also delete the original ops in redis when it copies them in?
 #
 # This defaults to not delete - livedb can deal with junk in the oplog.
-migrate.del = false
+migrate.del = argv.d
 
 if require.main == module
-  oplog = require('livedb-mongo') 'localhost:27017/test?auto_reconnect', safe:true
-  client = redis.createClient()
-  client.select 1
 
-  migrate oplog, client, (err) ->
-    return console.error err if err
-    console.log 'Done!'
-    client.quit()
-    oplog.close()
-
+  exports.migrate null, (err) ->
+    if err
+      console.log "ERROR! NOT FINISHED!"
+      console.log err
+    else
+      console.log "ALL DONE"
+    process.exit()
 
