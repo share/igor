@@ -52,18 +52,18 @@ castToSnapshot = (doc) ->
 
 
 exports = module.exports
-exports.itsalive = (callback) ->
+exports.itsalive = (options = {}, callback) ->
   #don't need to make these collections live
   blacklist = ['system.indexes', 'system.users', 'configs', 'sessions']
-  batch = argv.b
+  batch = options.b or argv.b
 
   # Setup the db
-  mongo = backend.createMongo()
+  mongo = backend.createMongo options
   db = new LiveDbMongo mongo
   ldbc = livedb.client
     db: db
-    redis: backend.createRedis() 
-    redisObserver: backend.createRedis()
+    redis: backend.createRedis options
+    redisObserver: backend.createRedis options
 
   ottypes = require('ottypes')
   jsonType = ottypes.json0.uri
@@ -145,7 +145,7 @@ exports.itsalive = (callback) ->
 #called directly from command line (not required as a module)
 if require.main == module
 
-  exports.itsalive (err, results) ->
+  exports.itsalive null, (err) ->
     if err
       console.log "ERROR! NOT FINISHED!"
       console.log err

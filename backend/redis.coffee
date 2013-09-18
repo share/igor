@@ -1,17 +1,16 @@
 optimist = require 'optimist'
 
-module.exports = ->
+module.exports = (options) ->
 
   argv = optimist.argv
 
-  conf =
-    host: argv.host or process.env.REDIS_HOST or 'localhost'
-    port: argv.port or process.env.REDIS_PORT or 6379
-    db: argv.db or process.env.REDIS_DB or 1
+  options.rhost ?= argv.rhost or process.env.REDIS_HOST or 'localhost'
+  options.rport ?= argv.rport or process.env.REDIS_PORT or 6379
+  options.db ?= argv.rdb or process.env.REDIS_DB or 1
 
-  console.log "Redis: #{conf.host}:#{conf.port} #{conf.db}"
+  console.log "Redis: #{options.rhost}:#{options.rport} #{options.rdb}"
 
-  redis = require('redis').createClient conf.port, conf.host
-  redis.select conf.db
+  redis = require('redis').createClient options.rport, options.rhost
+  redis.select options.rdb
 
-  return redis
+  redis

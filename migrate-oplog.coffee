@@ -4,7 +4,12 @@ backend = require './backend'
 LiveDbMongo = require 'livedb-mongo'
 argv = require('optimist').argv
 
-migrate = module.exports = (oplog, client, callback) ->
+
+exports = module.exports
+exports.migrate = (options = {}, callback) ->
+  oplog = new LiveDbMongo backend.createMongo options
+  client = backend.createRedis options
+
   client.keys '* ops', (err, results) ->
     return callback? err if err
 
@@ -41,13 +46,12 @@ migrate = module.exports = (oplog, client, callback) ->
 migrate.del = argv.d
 
 if require.main == module
-  oplog = new LiveDbMongo backend.createMongo()
-  client = backend.createRedis()
 
-  migrate oplog, client, (err) ->
-    return console.error err if err
-    console.log 'Done!'
-    client.quit()
-    oplog.close()
-
+  exports.migrate null, (err) ->
+    if err
+      console.log "ERROR! NOT FINISHED!"
+      console.log err
+    else
+      console.log "ALL DONE"
+    process.exit()
 
