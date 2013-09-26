@@ -1,6 +1,10 @@
 # Turn a mongo db into a live-db
 # you should probably redis-cli flushdb; before running this script
 async = require 'async'
+argv = require('optimist').argv
+backend = require './backend'
+livedb = require 'livedb'
+LiveDbMongo = require 'livedb-mongo'
 
 consoleError = (err) ->
   return console.error err if err
@@ -51,23 +55,21 @@ exports = module.exports
 exports.itsalive = (options = {}, callback) ->
   #don't need to make these collections live
   blacklist = ['system.indexes', 'system.users', 'configs', 'sessions']
-  batch = options.batch
+  batch = options.b or argv.b
 
   # Setup the db
-  backend = require './backend'
-  livedb = require 'livedb'
-  {LiveDbMongo} = require 'livedb-mongo'
-  mongo = backend.createMongo options.mongo
+  mongo = backend.createMongo options
   db = new LiveDbMongo mongo
   ldbc = livedb.client
     db: db
-    redis: backend.createRedis(options.redis)
-    redisObserver: backend.createRedis(options.redis)
+    redis: backend.createRedis options
+    redisObserver: backend.createRedis options
 
   ottypes = require('ottypes')
   jsonType = ottypes.json0.uri
 
   mongo.collections (err, cols) ->
+    return callback err if err
     collections = []
     cols.forEach (c) ->
       console.log "collection", c.collectionName
@@ -142,20 +144,11 @@ exports.itsalive = (options = {}, callback) ->
 
 #called directly from command line (not required as a module)
 if require.main == module
-  # Allow user to process operation in batches of specified number, in case their data is too large for .toArray()
-  argv = require('optimist').argv
-  batch = argv.b
-  options =
-    batch: batch
-    mongo:
-      host: 'localhost'
-      port: 27017
-      db: 'test'
-    redis:
-      host: 'localhost'
-      port: 6379
-      db: 1
 
-  exports.itsalive options, (err, results) ->
-    console.log "ALL DONE"
+  exports.itsalive null, (err) ->
+    if err
+      console.log "ERROR! NOT FINISHED!"
+      console.log err
+    else
+      console.log "ALL DONE"
     process.exit()
