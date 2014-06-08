@@ -54,7 +54,7 @@ castToSnapshot = (doc) ->
 exports = module.exports
 exports.itsalive = (options = {}, callback) ->
   #don't need to make these collections live
-  blacklist = ['system.indexes', 'system.users', 'configs', 'sessions']
+  blacklist = ['system.indexes', 'system.profile', 'system.users', 'system.js', 'configs', 'sessions']
   batch = options.b or argv.b
 
   # Setup the db
