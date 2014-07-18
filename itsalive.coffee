@@ -89,7 +89,9 @@ exports.itsalive = (options = {}, callback) ->
         cursor = collection.find()
         cursor.batchSize(+batch) if batch
         cursor.each (err, doc) ->
-          return cb err if err
+          if err
+            console.log "uh oh", cName, err
+            return cb err
           #we are done when we get a null doc
           if !doc
             cb(null, counter) if counter == count
@@ -99,21 +101,28 @@ exports.itsalive = (options = {}, callback) ->
           snapshot = castToSnapshot doc
           docName = snapshot.docName
 
+          handleError = (err, opts, ecb) ->
+            console.log "Error with #{cName} #{docName}"
+            console.error err
+            console.log "doc", JSON.stringify(doc)
+            console.log "opts", JSON.stringify(opts)
+            return ecb(err)
+
           #console.log "doc", counter, cName, docName
           db.getVersion cName, docName, (err, opVersion) ->
-            return cb err if err
+            return handleError err, {fn: "getVersion"}, cb if err
 
             if opVersion is 0
-              console.log "no ops", counter
+              console.log "no ops", cName, docName, counter
               # Create an operation that creates the document snapshot
               opData = create: {type: jsonType, data: snapshot.data}, v:0
 
               db.writeOp cName, docName, opData, (err) ->
-                return cb err if err
+                return handleError err, {fn:"writeOp", opData}, cb if err
 
                 snapshot.v = 1
                 db.writeSnapshot cName, docName, snapshot, (err) ->
-                  return cb err if err
+                  return handleError err, {fn:"writeSnapshot", snapshot}, cb if err
                   counter++
                   cb null, counter if counter is count
 
@@ -122,16 +131,16 @@ exports.itsalive = (options = {}, callback) ->
               console.log "diff  ops", counter
 
               db.writeSnapshot cName, docName, {v:0}, (err) ->
-                return cb err if err
+                return handleError err, {fn:"writeSnapshot"}, cb if err
                 ldbc.fetch cName, docName, (err, snapshot) ->
-                  return cb err if err
+                  return handleError err, {fn:"fetch", snapshot}, cb if err
                   db.writeSnapshot cName, docName, snapshot, (err) ->
-                    return cb err if err
+                    return handleError err, {fn:"writeSnapshot", snapshot}, cb if err
                     counter++
                     cb null, counter if counter is count
 
             else
-              console.log "ok", counter
+              console.log "ok", cName, docName, counter
               counter++
               cb null, counter if counter is count
 
