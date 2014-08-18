@@ -8,12 +8,12 @@
   },
   "dependencies": {
     "optimist": "~0.5.2",
-    "redis": "~0.8.3",
+    "redis": "^0.12.1",
     "mongoskin": "*",
     "ottypes": "*",
     "async": "*",
     "coffee-script": "*",
-    "livedb":"*",
+    "livedb":"^0.4",
     "livedb-mongo":"*",
     "arraydiff": "*"
   },
