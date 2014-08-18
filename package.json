@@ -13,7 +13,7 @@
     "ottypes": "*",
     "async": "*",
     "coffee-script": "*",
-    "livedb":"^0.4",
+    "livedb":"^0.3",
     "livedb-mongo":"*",
     "arraydiff": "*"
   },
