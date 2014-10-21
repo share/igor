@@ -60,10 +60,14 @@ exports.itsalive = (options = {}, callback) ->
   # Setup the db
   mongo = backend.createMongo options
   db = new LiveDbMongo mongo
+  redis = backend.createRedis options
+  redisObserver = backend.createRedis options
+  driver = livedb.redisDriver db, redis, redisObserver
   ldbc = livedb.client
     db: db
-    redis: backend.createRedis options
-    redisObserver: backend.createRedis options
+    driver: driver
+    #redis: backend.createRedis options
+    #redisObserver: backend.createRedis options
 
   ottypes = require('ottypes')
   jsonType = ottypes.json0.uri
